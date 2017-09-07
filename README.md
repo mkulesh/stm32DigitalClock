@@ -1,6 +1,7 @@
 # <img src="https://github.com/mkulesh/stm32DigitalClock/blob/master/images/stm32_image.png" align="center" height="48" width="48"> "A digital clock based on STM32F405 MCU"
 
-This repository provides hardware layout and firmware for a radio-controlled digital clock based on STM32F405 MCU and DCF77 receiver ![in operation](https://github.com/mkulesh/stm32DigitalClock/blob/master/images/in_operation.jpg)
+This repository provides hardware layout and firmware for a radio-controlled digital clock based on [STM32F405RG](http://www.st.com/content/st_com/en/products/microcontrollers/stm32-32-bit-arm-cortex-mcus/stm32-high-performance-mcus/stm32f4-series/stm32f405-415/stm32f405rg.html) MCU and [DCF77](https://de.wikipedia.org/wiki/DCF77) receiver:
+![in operation](https://github.com/mkulesh/stm32DigitalClock/blob/master/images/in_operation.jpg)
 
 ## Hardware design
 This clock consist of two boards:

@@ -27,7 +27,7 @@ The firmware (see directory src) is written in C++ [System Workbench for STM32](
 
 This software is published under the *GNU General Public License, Version 3*
 
-Copyright (C) 2014-2017 Mikhail Kulesh
+Copyright (C) 2016-2017 Mikhail Kulesh
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 

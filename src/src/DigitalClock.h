@@ -46,6 +46,11 @@ public:
     static const size_t SCR_NUMBER = 6;
     static const size_t ALARM_NUMBER = 3;
     static const size_t TEMPERATURE_TRIALS = 10;
+
+    static const int DCF_START_HOUR = 12;
+    static const int DCF_START_MINUTES = 0;
+    static const int DCF_TOLERANCE = 60;
+
     const char * LOG_FILE_NAME = "dc.log";
 
     enum ScreenType
@@ -132,6 +137,7 @@ protected:
     void updateSdCardState ();
     void startAlarm (size_t n);
     bool writeLogToSd (const char *);
+    void startDcf (bool alarm);
 
     virtual void onButtonPressed (const Devices::Button * b, uint32_t numOccured);
     virtual void onDcfBit (int16_t secondNr, size_t errorNr, bool bit);

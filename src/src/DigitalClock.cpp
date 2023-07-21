@@ -210,10 +210,7 @@ void DigitalClock::run ()
     setTime();
     rtc.start(8*2047 + 7, RTC_WAKEUPCLOCK_RTCCLK_DIV2, irqPrioRtc, NULL);
 
-    dcfReceiverStartTime = 0;
-    dcf.start(irqPrioDcf, this);
-
-    piezoAlarm.start(1);
+    startDcf(true);
 
     while(true)
     {
@@ -246,10 +243,9 @@ void DigitalClock::periodic ()
         {
             startAlarm(alarmNumber);
         }
-        if (dayTime.tm_hour == 3 && dayTime.tm_min == 0 && !dcf.isActive())
+        if (dayTime.tm_hour == DCF_START_HOUR && dayTime.tm_min == DCF_START_MINUTES)
         {
-            dcfReceiverStartTime = rtc.getTimeSec();
-            dcf.start(irqPrioDcf, this);
+            startDcf(false);
         }
     }
     else if (eventLedToggle.isOccured())
@@ -474,15 +470,31 @@ bool DigitalClock::writeLogToSd (const char * logStr)
 }
 
 
+void DigitalClock::startDcf (bool alarm)
+{
+    if (!dcf.isActive())
+    {
+        dcfReceiverStartTime = rtc.getTimeSec();
+        dcf.start(irqPrioDcf, this);
+        if (alarm)
+        {
+            piezoAlarm.start(1);
+        }
+    }
+}
+
+
 void DigitalClock::onButtonPressed (const Devices::Button * b, uint32_t numOccured)
 {
     if (wavStreamer.isActive())
     {
         wavStreamer.stop();
+        return;
     }
     if (piezoAlarm.isActive())
     {
         piezoAlarm.stop();
+        return;
     }
 
     if (b == &bMode)
@@ -502,18 +514,25 @@ void DigitalClock::onButtonPressed (const Devices::Button * b, uint32_t numOccur
     else if (b == &bPlus)
     {
         USART_DEBUG("plus button pressed: " << numOccured);
-        modifyActiveElement(1);
-        if (activeScreen == ScreenType::SCR_ALARM1 ||
-            activeScreen == ScreenType::SCR_ALARM2 ||
-            activeScreen == ScreenType::SCR_ALARM3)
+        if (activeScreen == ScreenType::SCR_HOME)
         {
-            size_t alarmNr = (size_t)activeScreen - (size_t)ScreenType::SCR_ALARM1;
-            if (alarmNr < ALARM_NUMBER &&
-                alarms[alarmNr]->getActiveElement() == AlarmSetting::AS_ACTIVE &&
-                numOccured > 0)
+            startDcf(true);
+        }
+        else
+        {
+            modifyActiveElement(1);
+            if (activeScreen == ScreenType::SCR_ALARM1 ||
+                activeScreen == ScreenType::SCR_ALARM2 ||
+                activeScreen == ScreenType::SCR_ALARM3)
             {
-                setScreen(SCR_HOME);
-                startAlarm(alarmNr);
+                size_t alarmNr = (size_t)activeScreen - (size_t)ScreenType::SCR_ALARM1;
+                if (alarmNr < ALARM_NUMBER &&
+                    alarms[alarmNr]->getActiveElement() == AlarmSetting::AS_ACTIVE &&
+                    numOccured > 0)
+                {
+                    setScreen(SCR_HOME);
+                    startAlarm(alarmNr);
+                }
             }
         }
     }
@@ -554,26 +573,29 @@ void DigitalClock::onDcfBit (int16_t secondNr, size_t errorNr, bool bit)
 
 void DigitalClock::onDcfTimeReceived (const ::tm & dt, const char * /*dayTimeStr*/)
 {
-    dcfState = DcfState::READY;
-    dcf.stop();
-    lcd.clear();
+    ::tm newDt = dt;
+    long diff = ::mktime(&dayTime) - ::mktime(&newDt);
+    long dur = rtc.getTimeSec() - dcfReceiverStartTime;
 
-    // log the DCF time
-    time_t diff = INFINITY_SEC;
+    char logLine[512];
+    if (!dcfTimeReceived ||
+            (::labs(diff) < DCF_TOLERANCE) ||
+            (::labs(diff) > 3600 - DCF_TOLERANCE && ::labs(diff) < 3600 + DCF_TOLERANCE))
     {
-        char logLine[512];
-        ::tm newDt = dt;
-        time_t diff = ::mktime(&dayTime) - ::mktime(&newDt);
-        time_t dur = rtc.getTimeSec() - dcfReceiverStartTime;
-        ::sprintf(logLine, "DCF time = %02d:%02d:%02d, PREV-NEW = %ld, DURATION = %ld", dt.tm_hour, dt.tm_min, dt.tm_sec, diff, dur);
+        dcfState = DcfState::READY;
+        lcd.clear();
+        dcf.stop();
+        ::sprintf(logLine, "DCF time = %02d:%02d:%02d, PREV-NEW = %ld, DURATION = %ld -> accepted", dt.tm_hour, dt.tm_min, dt.tm_sec, diff, dur);
         writeLogToSd(logLine);
-    }
-
-    if (!dcfTimeReceived || ::labs(diff) < 10)
-    {
         dayTime = dt;
         setTime();
         dcfTimeReceived = true;
+    }
+    else
+    {
+        dcfState = DcfState::INVALID;
+        ::sprintf(logLine, "DCF time = %02d:%02d:%02d, PREV-NEW = %ld, DURATION = %ld -> ignored", dt.tm_hour, dt.tm_min, dt.tm_sec, diff, dur);
+        writeLogToSd(logLine);
     }
 }
 

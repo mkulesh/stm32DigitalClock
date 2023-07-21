@@ -49,7 +49,8 @@ enum class DcfState
     ERROR = 1,
     BIT_PLUS = 2,
     BIT_MINUS = 3,
-    READY = 4
+    READY = 4,
+    INVALID = 5
 };
 
 /**

@@ -32,7 +32,7 @@
 
 static const char * emptyString = "      ";
 static const char * dayNames[7] = {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"};
-static const char dcfSymbols[5] = {' ', 'e', '+', '-', 0b00010101};
+static const char dcfSymbols[6] = {' ', 'e', '+', '-', 0b00010101, 'X'};
 
 unsigned char cicleIncrement (unsigned char val, int s, unsigned char min, unsigned char max)
 {
